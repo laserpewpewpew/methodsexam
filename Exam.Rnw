@@ -1,0 +1,135 @@
+\documentclass[12pt]{article}
+\usepackage{fullpage}
+
+\usepackage{graphicx}        % Enable graphics commands
+\usepackage{lscape}		% Enable landscape with \begin{landscape} until \end{landscape}
+\usepackage{natbib}			% Enable citation commands \citep{}, \citet{}, etc.
+\bibpunct{(}{)}{;}{a}{}{,}		% Formatting for in-text citations
+\usepackage{setspace}		% Enable double-spacing with \begin{spacing}{2} until \end{spacing}.
+\usepackage[utf8]{inputenc} 	% Enable utf8 characters, i.e., accents without coding--just type them in.
+\usepackage[english]{babel}	% English hyphenation and alphabetization.  Other languages available.
+\usepackage{dcolumn}        % For decimal-aligned stargazer output.
+\usepackage[colorlinks=true, urlcolor=blue, citecolor=black, linkcolor=black]{hyperref} % Include hyperlinks with the \url and \href commands.
+\setlength{\tabcolsep}{1pt}	% Make tables slightly narrower by reducing space between columns.
+
+\renewcommand\floatpagefraction{.9}	% These commands allow larger tables and graphics to fit
+\renewcommand\topfraction{.9}		% on a page when default settings would complain.
+\renewcommand\bottomfraction{.9}
+\renewcommand\textfraction{.1}
+\setcounter{totalnumber}{50}
+\setcounter{topnumber}{50}
+\setcounter{bottomnumber}{50}
+
+\newcommand{\R}{\textsf{R}~}        %This creates the command \R to typeset the name R correctly.
+
+%\usepackage[left=1in, right=1in]{geometry}	%Turn footnotes into endnotes (commented out).
+%\renewcommand{\footnotesize}{\normalsize}	
+%\usepackage{endnotes}
+%\renewcommand{\footnote}{\endnote}
+%\renewcommand{\section}{\subsection}
+
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+
+\pagestyle{empty}
+
+\begin{center}
+{\Large \textbf{POLI 5003: Exam}}
+\end{center}
+
+\textbf{Directions.}  Making sure not only to provide output of the requested analyses but also to describe your results textually, please use these data to answer the following questions.  You may consult any materials you choose, but please do not discuss the exam with anyone else; it is to be your work alone.  Please submit your \verb+.Rnw+ file via ICON Dropbox within 48 hours of downloading the exam materials.\\
+
+In the included dataset \verb+press.dta+, the variable \verb+press_free+ is the Press Freedom Index compiled by Reporters Without Borders for countries around the world in the year 2008.  (To make the variable more intuitive, it was reversed from the RWB scaling so that high values represent more press freedom.)  Suppose we are interested in the effect of international conflict on governments' respect for freedom of the press.  The variable \texttt{conflict} is the number of serious international conflicts (those that escalated to uses of force or outright war) in which each country had recently taken part according to the Correlates of War dataset.  
+
+
+<<label=Setup>>=
+# Setup
+needed.packages <- c("foreign", "stargazer", "ggplot2", "rstan")
+lapply(needed.packages, require, character.only=T)
+
+press <- read.dta("press.dta")
+var.labels <- attr(press,"var.labels")
+data.key <- data.frame(var.name=names(press),var.labels)
+data.key
+@
+
+\pagebreak
+\subsection*{Part 1: Classical Linear Regression}
+
+\begin{enumerate}
+\item Does a simple regression support the hypothesis that countries that have been engaged in more conflicts have less respect for freedom of the press?  How do you know?  Describe the estimated effect of conflicts on press freedom.\\
+
+<<label=Answer1>>=
+
+
+@
+
+\item Is the hypothesis supported when controls for domestic regime type (\verb+dem+) and GDP per capita (\verb+gdp_pc+) are introduced?  Use \verb+stargazer+ to present the results for both models in a neatly-formatted table.  (Recall that the file \verb+LaTeX_Example.Rnw+ in the course's GitHub directory provides an example of how to use \verb+stargazer+.) \\
+
+<<label=Answer2>>=
+
+
+@
+
+<<label=Table.A2, results=tex, echo=F>>=
+
+
+@
+
+\pagebreak
+\item Assess the substantive significance of the estimated effects of all three independent variables.  
+
+<<label=Answer3>>=
+
+
+@
+
+\item Suppose we think the responses of democracies and nondemocracies to conflict are different with regard to press freedom.  Is there support for this conditional hypothesis?  How do you know?\\
+
+<<label=Answer4>>=
+
+
+@
+
+\item Does conflict have a statistically significant effect on the press freedom of nondemocracies?  On that of democracies?  Report the estimated effect and $p$-value for each.\\
+
+<<label=Answer5>>=
+
+
+@
+
+\item Suppose we were really more interested the difference in press freedom between democracies and nondemocracies.  What effect does conflict have on this difference? Your answer should include a graph generated using the \verb+interplot+ function from the course's GitHub page.\\
+
+<<label=f1, echo=F, fig=T, include=F, width=6, height = 6>>==
+
+
+@
+
+\begin{figure}[htbp] 
+  \caption{Conditional Effect of Democracy by Level of International Conflict}
+  \label{F:dem}
+  \begin{center}
+%   Uncomment the following line once you've generated the graph
+%    \includegraphics[width=5.25in]{Exam-f1.pdf}
+  \end{center}
+\end{figure}
+
+\pagebreak
+\subsection*{Part 2: Bayesian Linear Regression}
+
+\item Consider again the unconditional hypothesis that countries that have been engaged in a larger number of serious international conflicts will evince less respect for freedom of the press, even when taking into account their regime type and their GDP per capita.  Does the posterior of a Bayesian linear regression with uninformative uniform priors support this hypothesis?
+
+<<label=Answer7>>==
+
+
+@
+
+\item Suppose we wish to adopt a weakly informative prior that conflict has no effect on press freedom, and that we model this prior as a Cauchy distribution with location parameter 0 and scale parameter 0.5 (that is, as \verb+cauchy(0, 0.5)+).  Retain uninformative uniform priors for the control variables.  Does the posterior of a Bayesian linear regression model with these priors support the hypothesis that more conflict reduces press freedom?
+
+<<label=Answer8>>==
+
+
+@
+
+\end{enumerate}
+\end{document}

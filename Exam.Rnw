@@ -60,48 +60,140 @@ data.key
 \item Does a simple regression support the hypothesis that countries that have been engaged in more conflicts have less respect for freedom of the press?  How do you know?  Describe the estimated effect of conflicts on press freedom.\\
 
 <<label=Answer1>>=
-
-
+fit.1 <- lm(press_free ~ conflict, data=press)
 @
+<<label=Table.1, results=tex, echo=FALSE>>=
+stargazer(fit.1,
+          title="Effect of Conflict on Press Freedom",
+          covariate.labels=c("Conflict"),
+          dep.var.labels=c("Press Freedom")
+          )
+@
+
+The table above reports results from a simple bivaraite regression of the press freedom measure on number of conflicts.  There appears to be a statistically significant relationship between the number of conflicts a country engages in and their relative press freedom score.  The more conflict, the less press freedom.  For each additional conflict experienced an estimated reduction of 1.072 in the press freedom measure occurs.  This relationship is significant at the .05 level.  So there appears to be a relationship between the two variables that is statistically significantly different from zero and is negative - there is support for the hypothesis.
 
 \item Is the hypothesis supported when controls for domestic regime type (\verb+dem+) and GDP per capita (\verb+gdp_pc+) are introduced?  Use \verb+stargazer+ to present the results for both models in a neatly-formatted table.  (Recall that the file \verb+LaTeX_Example.Rnw+ in the course's GitHub directory provides an example of how to use \verb+stargazer+.) \\
 
 <<label=Answer2>>=
+fit.2 <- lm(press_free ~ conflict + dem + gdp_pc, data=press)
 
+@
+
+<<label=Table.2, results=tex, echo=F>>=
+stargazer(fit.1, fit.2,
+          title="Effect of Conflict on Press Freedom",
+          covariate.labels=c("Conflict", "Regime Type","GDP Per Capita"),
+          dep.var.labels=c("Press Freedom")
+          )
 
 @
 
-<<label=Table.A2, results=tex, echo=F>>=
+The results presented above in Table 2 confirm our findings from Table 1: there is a statistically significant negative relationship between the number of conflicts a country engages in and their relative press freedom score.  In the second model, which includes control variables for regime type and GDP per capita, this relationship is even stronger.  The coefficient increases in both size and significance.  As expected, both regime type and GDP per capita have a statistically significant effect in the expected direction.  Notably, the adjusted R$^2$ value increases rather drastically when we include just these two control variables.  This means our second model is a better fit and explains a little bit more of the variance in the dependent variable.  Yes, the hypothesis is still supported when including these controls.
 
-
-@
 
 \pagebreak
 \item Assess the substantive significance of the estimated effects of all three independent variables.  
 
 <<label=Answer3>>=
-
-
+press.range <- apply(press[,3:5], 2, function(x) max(x) - min(x))
+max.effects <- press.range * fit.2$coef[2:4]
+max.effects
+summary(press$gdp_pc)
+summary(press$conflict)
+table(press$conflict)
 @
+
+To assess the substnative significance of the estimated effects of all three independent variables I compared the maximum effect of each.  That is, I calculated what the estimated effect of going from the minimum value to the maximum value on each independent variable would be, while holding the other indepdendent variables constant.  The results, shown above, indicate that GDP per capita appears to have the greatest substantive effect on the dependent variable, press freedom.  This is partly attributable to the high amount of variation in the GDP per capita variable, illustrated in the summary statistics presented above as well. \\
+
+These findings should be used carefully, however.  At first glance the summary statistics of the conflict variable do not raise any red flags.  However, looking at the frequency table of the variable, we can see that a large portion of our sample is clustered near the bottom zero and one values.  This creates a problem for our analysis.  The substantive effect of conflict is quite large, as moving from zero to the max (20) results in a reduction of 22.83 on the press freedom score.  However, very few countries experience more than 8 conflicts, there is a gap of no cases from 13-17, and, as mentioned earlier, most cases are clustered near the bottom of this scale.  Therefore, the estimated substantive effect presented above might not be that reliable.  In addition, although dem is the largest coefficient in our table above, we can see this is because it is dichotomous - the other variables in our model have greater effects when moving from the min to the max.
 
 \item Suppose we think the responses of democracies and nondemocracies to conflict are different with regard to press freedom.  Is there support for this conditional hypothesis?  How do you know?\\
 
 <<label=Answer4>>=
-
-
+fit.4 <- lm(press_free ~ conflict + dem + gdp_pc + conflict*dem, data=press)
 @
 
+<<label=Table.3, results=tex, echo=F>>=
+stargazer(fit.1, fit.2, fit.4,
+          no.space=TRUE, omit.stat=c("ser", "f"),
+          title="Effect of Conflict on Press Freedom",
+         covariate.labels=c("Conflict", "Democracy","GDP Per Capita", "Conflict * Democracy"),
+          dep.var.labels=c("Press Freedom")
+          )
+@
+
+Yes, there does appear to be support for this conditional hypothesis.  I included an interaction term between conflict and regime type in the third model in Table 3, above.  There are several notable findings.  First, the interaction term is statistically significant at the .05 level.  How conflict affects democracies and how conflict affects non-democracies is statistically significantly different from zero.  That is, the conflict variable affects the two regime types in different ways.  The interaction term coefficient is telling us that there is indeed a different effect of conflict on press freedom for democracies than there is for non-democracies.  Looking to the conflict variable in model 3 above, we see that among non-democracies (when the dem variable equals zero) conflict has a statistically significant negative effect on relative press freedom scores.  For each conflict, non-democracies experience a 2.568 reduction in relative press freedom scores.
+
+\pagebreak
 \item Does conflict have a statistically significant effect on the press freedom of nondemocracies?  On that of democracies?  Report the estimated effect and $p$-value for each.\\
 
 <<label=Answer5>>=
-
-
+press$non_dem[press$dem==0] <- 1
+press$non_dem[press$dem==1] <- 0
+fit.5 <- lm(press_free ~ conflict + non_dem + gdp_pc + conflict*non_dem, data=press)
 @
 
+<<label=Table.3, results=tex, echo=F>>=
+stargazer(fit.1, fit.2, fit.4, fit.5,
+          no.space=TRUE, omit.stat=c("ser", "f"),
+          title="Effect of Conflict on Press Freedom",
+          covariate.labels=c("Conflict", "Democracy", "Non-Democracy","GDP Per Capita", "Conflict * Democracy", "Conflict* Non-Democracy"),
+          dep.var.labels=c("Press Freedom")
+          )
+@
+
+In Table 4 model 4 I simply reversed the dichotomous variable dem so that 1s are now 0s and vice-versa.  This changes the focus from democracies as a unit to non-democracies as a unit.  We see a statistically significant interaction term again, similar to the one in model 3.  However, the conflict variable is no long significant.  This means that for democracies (when nondem is equal to zero), conflict does not seem to have a statistically significant effect on press freedom.  For non-democracies, this does not appear to be true.  Since the interaction term is significant in both models we can conclude that there is indeed a difference in the way the conflict variable influences press freedom by regime type.  By looking at the conflict variable in each model we can see that conflict has a statistically significant negative effect for non-democracies, but does not appear to have an effect on democracies.  
+
+\pagebreak
 \item Suppose we were really more interested the difference in press freedom between democracies and nondemocracies.  What effect does conflict have on this difference? Your answer should include a graph generated using the \verb+interplot+ function from the course's GitHub page.\\
 
 <<label=f1, echo=F, fig=T, include=F, width=6, height = 6>>==
 
+interplot <- function(m, var1, var2, seed=324, sims=1000, steps=100, plot=TRUE) {
+    require(arm)
+    require(ggplot2)
+    set.seed(seed)
+    m.sims <- sim(m, sims)
+    
+    var12 <- paste0(var2,":",var1)
+    if (!var12 %in% names(m$coef)) var12 <- paste0(var1,":",var2)
+    if (!var12 %in% names(m$coef)) stop(paste("Model does not include the interaction of",var1 ,"and",var2))
+    coef <- data.frame(fake = seq(min(m$model[var2], na.rm=T), max(m$model[var2], na.rm=T), length.out=steps), coef1 = NA, ub = NA, lb = NA)
+    
+    for(i in 1:steps) {   
+        coef$coef1[i] <- mean(m.sims@coef[,match(var1, names(m$coef))] + 
+                                  coef$fake[i]*m.sims@coef[,match(var12, names(m$coef))])
+        coef$ub[i] <- quantile(m.sims@coef[,match(var1, names(m$coef))] + 
+                                   coef$fake[i]*m.sims@coef[,match(var12, names(m$coef))], .975)
+        coef$lb[i] <- quantile(m.sims@coef[,match(var1, names(m$coef))] + 
+                                   coef$fake[i]*m.sims@coef[,match(var12, names(m$coef))], .025)    
+    }
+
+    if(plot==TRUE) {
+        if(steps>5) {
+            coef.plot <- ggplot(coef, aes(x = fake, y = coef1)) +                       
+                geom_line() + geom_ribbon(aes(ymin=lb, ymax=ub), alpha=.5) 
+        } else {
+            coef.plot <- ggplot(coef, aes(x = fake, y = coef1)) +                       
+                geom_point() + geom_errorbar(aes(ymin=lb, ymax=ub), width=0) + 
+                scale_x_continuous(breaks = 0:steps)
+        }
+        return(coef.plot)
+    } else {
+        names(coef) <- c(var2, "coef", "ub", "lb")
+        return(coef)
+    }
+}
+
+require(arm)
+require(foreign)
+m2 <- fit.4
+
+p2 <- interplot(m=m2, var1="conflict", var2="dem", steps=2)
+p2 <- p2 + ylab("Coefficient for Conflict") + xlab("Democracy")
+p2
+
+interplot(m=m2, var1="conflict", var2="dem", steps=2, plot=F)
 
 @
 
@@ -110,9 +202,12 @@ data.key
   \label{F:dem}
   \begin{center}
 %   Uncomment the following line once you've generated the graph
-%    \includegraphics[width=5.25in]{Exam-f1.pdf}
+    \includegraphics[width=5.25in]{Exam-f1.pdf}
   \end{center}
 \end{figure}
+
+Figure 1 shows how the effect of conflict on relative press freedom scores is conditioned by the regime type of a country.  The graph plots the coefficient for conflict and its confidence interval for both democracies (1) and non-democracies (0).  For democracies we see a confidence interval containing zero; conflict does not appear to have a statistically significant effect on press freedom that is different from zero.  For non-democracies, however, we see a confidence interval that is solidly in negative numbers.  From this graph we can conclude that the effect of conflict on press freedom varies by regime type.
+
 
 \pagebreak
 \subsection*{Part 2: Bayesian Linear Regression}
@@ -121,15 +216,193 @@ data.key
 
 <<label=Answer7>>==
 
+######################
+# Requiried packages #
+######################
 
+ipak <- function(pkg){
+    new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
+    if (length(new.pkg)) 
+        install.packages(new.pkg, dependencies = TRUE)
+    sapply(pkg, require, character.only = TRUE)
+}
+
+packages <- c("ggplot2", "RCurl", "MCMCpack", "inline", "Rcpp")
+ipak(packages)
+
+require(rstan)
+
+#define the model
+pressfree.code <- '
+    data {
+        int<lower=0> N;
+        vector[N] press_free;
+        vector[N] conflict;
+        vector[N] dem;
+        vector[N] gdp_pc;
+    }
+    parameters {                
+        real beta1;             // coef for constant (default prior is uniform, i.e., noninformative)
+        real beta2;             // coef for stategini
+        real beta3;
+        real beta4;
+        real<lower=0> sigma;
+    }
+    model {
+        press_free ~ normal(beta1 + beta2 * conflict + beta3 * dem +
+                             beta4 * gdp_pc, sigma);
+    }
+'
+
+# put data into expected format
+press.data <- list(N = nrow(press), 
+                   press_free = press$press_free, 
+                   conflict = press$conflict, 
+                   dem = press$dem, 
+                   gdp_pc = press$gdp_pc)
+
+# Now we can run it
+set.seed(324)
+m1.stan <- stan(model_code = pressfree.code, data = press.data, 
+                iter = 10000, chains = 3)
+
+print(m1.stan)
+m1.stan.sim <- as.data.frame(m1.stan)
+
+b.conflict.plot <- qplot(m1.stan.sim$beta2, geom="density") + 
+    xlab("Coefficient of Conflict") + 
+    ylab("Density of Posterior Distribution") +
+    theme_bw()
 @
+<<label=f2, echo=F, fig=T, include=F, width=6, height = 6>>=
+b.conflict.plot
+@
+
+<<label=Answer7c>>=
+# Graph regression results
+press2 <- press
+
+# Standardize continuous IVs by dividing by 2 s.d.s (per Gelman (2008))
+for (iv in 5:5) {
+    press2[,iv] <- press2[,iv]/(2*sd(press2[,iv]))
+}
+
+press2.data <- list(N = nrow(press2), 
+                    press_free = press2$press_free, 
+                    conflict = press2$conflict,
+                    dem = press2$dem, 
+                    gdp_pc = press2$gdp_pc)
+
+set.seed(324)
+m1.stan2 <- stan(fit=m1.stan, data=press2.data, iter = 10000, chains = 3)
+m1.stan2.sim <- as.data.frame(m1.stan2)
+
+# HDI.posterior is based, in part, on Kruschke (2011, 628-29)
+HDI.posterior <- function(data = NULL, mass = .95) {
+    n.vars <- dim(data)[2]-2
+    results.HDI <- matrix(rep(NA,3*n.vars), nrow=n.vars, ncol=3)
+    for (var in 1:n.vars) {
+        post <- data[,var]
+        sorted.post <- sort(post)
+        ci.idx <- floor(mass * length(sorted.post))
+        n.ci <- length(sorted.post) - ci.idx
+        ci.width <- rep(0, n.ci)
+        for (i in 1:n.ci) {
+            ci.width[i] <- sorted.post[i+ci.idx] - sorted.post[i]
+        }
+        HDI.min <- sorted.post[which.min(ci.width)]
+        HDI.max <- sorted.post[which.min(ci.width)+ci.idx]
+        mean.post <- mean(post)
+        results.HDI[var,] <- c(mean.post, HDI.min, HDI.max)
+    }  
+    results.HDI <- as.data.frame(results.HDI)
+    names(results.HDI) <- c("b", "lb", "ub")
+    return(results.HDI)
+}
+
+reg.results <- HDI.posterior(m1.stan2.sim)   
+reg.results <- reg.results[-1,]             # exclude constant (not interesting)
+reg.results$no <- 1:dim(reg.results)[1]     # an index to order the variables
+reg.results$var <- c("Conflict", "Dem", "GDP/pc") # variable names
+
+reg.plot <- ggplot(data = reg.results, aes(y = no, x = b)) +
+    geom_point() + geom_errorbarh(aes(xmin = lb, xmax = ub, height=0)) +
+    ylab("") + xlab("") + theme_bw() + 
+    scale_y_reverse(breaks = 1:dim(reg.results)[1], 
+                    labels = reg.results[1:dim(reg.results)[1],"var"]) +
+    geom_vline(xintercept=c(0), linetype="dotted")
+@
+
+<<label=f3, echo=F, fig=T, include=F, width=6, height = 6>>=
+reg.plot
+@
+
+\begin{figure}[htbp] 
+  \caption{Posterior Distribution of Bayesian Linear Regression}
+  \label{F:b.conflict.plot}
+  \begin{center}
+    \includegraphics[width=5.25in]{Exam-f2.pdf}
+  \end{center}
+\end{figure}
+
+Figure 2 plots the distribution of the Bayesian linear regression.  The distribution is centered where we would expect it, slightly negative.  This would confirm our unconditional hypothesis of the negative effect of conflict on press freedom.  However it is concerning that zero is contained by the distribution, even though it is in the far tail.  Further analysis is needed.
+
+\pagebreak
+
+\begin{figure}[htbp] 
+  \caption{Bayesian Linear Regression Results}
+  \label{F:b.conflict.plot}
+  \begin{center}
+    \includegraphics[width=5.25in]{Exam-f3.pdf}
+  \end{center}
+\end{figure}
+
+Figure 3 plots the regression results with credible intervals.  As we can see the 95\% credible interval for the conflict variable does not include zero - the concern noted in figure 2 - this does not appear to be a problem.  We have further support for our unconditional hypothesis that higher numbers of conflict will have a negative affect on relative press freedom scores.  
+
+\pagebreak
 
 \item Suppose we wish to adopt a weakly informative prior that conflict has no effect on press freedom, and that we model this prior as a Cauchy distribution with location parameter 0 and scale parameter 0.5 (that is, as \verb+cauchy(0, 0.5)+).  Retain uninformative uniform priors for the control variables.  Does the posterior of a Bayesian linear regression model with these priors support the hypothesis that more conflict reduces press freedom?
 
 <<label=Answer8>>==
+pressfree.code2 <- '
+    data {
+        int<lower=0> N;
+        vector[N] press_free;
+        vector[N] conflict;
+        vector[N] dem;
+        vector[N] gdp_pc;
+    }
+    parameters {                
+        real beta1;             // coef for constant (default prior is uniform, i.e., noninformative)
+        real beta2;             // coef for stategini
+        real beta3;
+        real beta4;
+        real<lower=0> sigma;
+    }
+    model {
+        beta1 ~ cauchy(0, 0.5);
+        beta2 ~ cauchy(0, 0.5);
+        beta3 ~ cauchy(0, 0.5);
+        beta4 ~ cauchy(0, 0.5);
+        
+        press_free ~ normal(beta1 + beta2 * conflict + beta3 * dem +
+        beta4 * gdp_pc, sigma);
+    }
+'
 
-
+set.seed(324)
+m1.stan2.s2 <- stan(model_code = pressfree.code2, data = press2.data, 
+                iter = 10000, chains = 3)
 @
+
+\pagebreak
+
+<<label=stanresults>>=
+print(m1.stan2)
+print(m1.stan2.s2)
+@
+
+Looking at the two models side by side we see similar results.  However in the second model, using a weakly informative prior that conflict has no effect on press freedom, we now see a 95\% credible interval that is bound by zero (-1.8, 0.0).  Both models show a negative effect of conflict on press freedom, providing support for our hypothesis.  The second model, however, does shift the credible interval in a concerning direction (from -2.0, -0.3).  There is still somehat weak evidence supporting our unconditional hypothesis, even after adopting the subjective belief that there is no relationship.  These results are fairly robust.
 
 \end{enumerate}
 \end{document}
